@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Eliminar transacción — Alke Wallet{% endblock %}
+{% block nav_transactions %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card border-danger shadow-sm">
+      <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle me-2"></i>Confirmar eliminación
+      </div>
+      <div class="card-body">
+        <p>¿Estás seguro de que deseas eliminar la transacción?</p>
+        <dl class="row">
+          <dt class="col-5">Transacción</dt>
+          <dd class="col-7">#{{ tx.pk }}</dd>
+          <dt class="col-5">Tipo</dt>
+          <dd class="col-7">{{ tx.get_transaction_type_display }}</dd>
+          <dt class="col-5">Monto</dt>
+          <dd class="col-7 fw-bold">${{ tx.amount|floatformat:2 }}</dd>
+        </dl>
+        <div class="alert alert-warning py-2">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          <small>El saldo de la cuenta <strong>no</strong> será revertido automáticamente.</small>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash me-1"></i>Sí, eliminar
+            </button>
+            <a href="{% url 'transactions:transaction_detail' tx.pk %}"
+               class="btn btn-secondary">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

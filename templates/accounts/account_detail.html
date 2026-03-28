@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Cuenta #{{ account.pk }} — Alke Wallet{% endblock %}
+{% block nav_accounts %}active{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'accounts:account_list' %}">Cuentas</a></li>
+    <li class="breadcrumb-item active">Cuenta #{{ account.pk }}</li>
+  </ol>
+</nav>
+
+<!-- Account summary card -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h2 class="h5 mb-0">
+      <i class="bi bi-bank me-2 text-success"></i>Cuenta #{{ account.pk }}
+    </h2>
+    <div>
+      <a href="{% url 'transactions:transaction_create' account.pk %}"
+         class="btn btn-sm btn-success me-1">
+        <i class="bi bi-arrow-left-right me-1"></i>Nueva transacción
+      </a>
+      <a href="{% url 'accounts:account_update' account.pk %}"
+         class="btn btn-sm btn-outline-primary me-1">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <a href="{% url 'accounts:account_delete' account.pk %}"
+         class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-trash me-1"></i>Eliminar
+      </a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-sm-6">
+        <dl class="row mb-0">
+          <dt class="col-5">Usuario</dt>
+          <dd class="col-7">
+            <a href="{% url 'users:user_detail' account.user.pk %}">
+              {{ account.user.name }}
+            </a>
+          </dd>
+          <dt class="col-5">Email</dt>
+          <dd class="col-7 text-muted">{{ account.user.email }}</dd>
+          <dt class="col-5">Estado</dt>
+          <dd class="col-7">
+            {% if account.is_active %}
+              <span class="badge bg-success">Activa</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactiva</span>
+            {% endif %}
+          </dd>
+        </dl>
+      </div>
+      <div class="col-sm-6 text-sm-end">
+        <p class="text-muted small mb-1">Saldo disponible</p>
+        <p class="display-6 fw-bold text-success mb-0">
+          ${{ account.balance|floatformat:2 }}
+        </p>
+        <p class="text-muted small">
+          Actualizado {{ account.updated_at|date:"d/m/Y H:i" }}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction history -->
+<h3 class="h5 mb-3">
+  <i class="bi bi-clock-history me-2 text-secondary"></i>Historial de transacciones
+</h3>
+
+{% if transactions %}
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Tipo</th>
+          <th>Monto</th>
+          <th>Descripción</th>
+          <th>Fecha</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+        <tr>
+          <td class="text-muted">{{ tx.pk }}</td>
+          <td>
+            {% if tx.transaction_type == "DEPOSIT" %}
+              <span class="badge bg-success"><i class="bi bi-arrow-down-circle me-1"></i>Depósito</span>
+            {% else %}
+              <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-circle me-1"></i>Retiro</span>
+            {% endif %}
+          </td>
+          <td class="fw-semibold">${{ tx.amount|floatformat:2 }}</td>
+          <td class="text-muted">{{ tx.description|default:"—" }}</td>
+          <td class="text-muted small">{{ tx.created_at|date:"d/m/Y H:i" }}</td>
+          <td class="text-end">
+            <a href="{% url 'transactions:transaction_detail' tx.pk %}"
+               class="btn btn-sm btn-outline-secondary" title="Detalle">
+              <i class="bi bi-eye"></i>
+            </a>
+            <a href="{% url 'transactions:transaction_delete' tx.pk %}"
+               class="btn btn-sm btn-outline-danger" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-2"></i>Esta cuenta no tiene transacciones aún.
+  <a href="{% url 'transactions:transaction_create' account.pk %}">Registrar la primera.</a>
+</div>
+{% endif %}
+
+<div class="mt-3">
+  <a href="{% url 'accounts:account_list' %}" class="btn btn-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+</div>
+{% endblock %}

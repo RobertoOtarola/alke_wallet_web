@@ -1,0 +1,59 @@
+/* ── Alke Wallet — Custom Stylesheet ── */
+
+:root {
+  --aw-primary: #0d6efd;
+  --aw-success: #198754;
+  --aw-warning: #ffc107;
+  --aw-danger:  #dc3545;
+}
+
+body {
+  background-color: #f5f7fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main.container {
+  flex: 1;
+}
+
+/* ── Cards ── */
+.card {
+  border: none;
+  border-radius: 0.75rem;
+}
+
+.card-header {
+  background-color: #fff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.75rem 0.75rem 0 0 !important;
+  padding: 1rem 1.25rem;
+}
+
+/* ── Navbar ── */
+.navbar-brand {
+  font-size: 1.3rem;
+  letter-spacing: 0.5px;
+}
+
+/* ── Tables ── */
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
+
+/* ── Badges ── */
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* ── Forms ── */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--aw-primary);
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* ── Alerts (Django messages mapping) ── */
+.alert-debug  { --bs-alert-color: #084298; --bs-alert-bg: #cfe2ff; }

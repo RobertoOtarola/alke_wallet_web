@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Nueva Transacción — Alke Wallet{% endblock %}
+{% block nav_transactions %}active{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{% url 'accounts:account_list' %}">Cuentas</a>
+    </li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'accounts:account_detail' account.pk %}">Cuenta #{{ account.pk }}</a>
+    </li>
+    <li class="breadcrumb-item active">Nueva transacción</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <!-- Account summary -->
+    <div class="alert alert-success d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <i class="bi bi-bank me-2"></i>
+        <strong>{{ account.user.name }}</strong> — Cuenta #{{ account.pk }}
+      </div>
+      <div class="fw-bold fs-5">
+        Saldo: ${{ account.balance|floatformat:2 }}
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h2 class="h5 mb-0">
+          <i class="bi bi-arrow-left-right me-2"></i>Nueva transacción
+        </h2>
+      </div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {{ form|crispy }}
+          <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i>Registrar
+            </button>
+            <a href="{% url 'accounts:account_detail' account.pk %}"
+               class="btn btn-secondary">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
