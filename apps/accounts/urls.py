@@ -7,9 +7,9 @@ from . import views
 app_name = "accounts"
 
 urlpatterns = [
-    path("", views.account_list, name="account_list"),
-    path("create/", views.account_create, name="account_create"),
-    path("<int:pk>/", views.account_detail, name="account_detail"),
-    path("<int:pk>/edit/", views.account_update, name="account_update"),
-    path("<int:pk>/delete/", views.account_delete, name="account_delete"),
+    path("", views.AccountListView.as_view(), name="account_list"),
+    path("create/", views.AccountCreateView.as_view(), name="account_create"),
+    path("<int:pk>/", views.AccountDetailView.as_view(), name="account_detail"),
+    path("<int:pk>/edit/", views.AccountUpdateView.as_view(), name="account_update"),
+    path("<int:pk>/delete/", views.AccountDeleteView.as_view(), name="account_delete"),
 ]

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Cuentas — Alke Wallet{% endblock %}
 {% block nav_accounts %}active{% endblock %}
 
@@ -29,7 +30,7 @@
         <tr>
           <td class="text-muted">{{ account.pk }}</td>
           <td>{{ account.user.name }}</td>
-          <td class="fw-semibold text-success">${{ account.balance|floatformat:2 }}</td>
+          <td class="fw-semibold text-success">${{ account.balance|floatformat:0|intcomma }}</td>
           <td>
             {% if account.is_active %}
               <span class="badge bg-success">Activa</span>

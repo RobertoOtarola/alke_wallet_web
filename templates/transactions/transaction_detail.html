@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Transacción #{{ tx.pk }} — Alke Wallet{% endblock %}
 {% block nav_transactions %}active{% endblock %}
 
@@ -57,7 +58,7 @@
           </dd>
 
           <dt class="col-sm-4">Monto</dt>
-          <dd class="col-sm-8 fw-bold fs-5">${{ tx.amount|floatformat:2 }}</dd>
+          <dd class="col-sm-8 fw-bold fs-5">${{ tx.amount|floatformat:0|intcomma }}</dd>
 
           <dt class="col-sm-4">Descripción</dt>
           <dd class="col-sm-8">{{ tx.description|default:"Sin descripción" }}</dd>

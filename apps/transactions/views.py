@@ -1,7 +1,10 @@
-"""Views for the transactions app."""
+"""Views for the transactions app using CBVs."""
 
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, FormView, DeleteView
 
 from apps.accounts.models import Account
 from core.exceptions import InsufficientFundsError, InvalidAmountError
@@ -11,71 +14,86 @@ from .forms import TransactionForm
 from .models import Transaction
 
 
-def transaction_list(request):
-    """GET /transactions/ — list all transactions across all accounts."""
-    transactions = Transaction.objects.select_related("account__user").all()
-    return render(
-        request,
-        "transactions/transaction_list.html",
-        {"transactions": transactions},
-    )
+class StaffRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
 
 
-def transaction_detail(request, pk: int):
-    """GET /transactions/<pk>/ — display a single transaction."""
-    tx = get_object_or_404(
-        Transaction.objects.select_related("account__user"), pk=pk
-    )
-    return render(request, "transactions/transaction_detail.html", {"tx": tx})
+class TransactionListView(LoginRequiredMixin, ListView):
+    model = Transaction
+    template_name = "transactions/transaction_list.html"
+    context_object_name = "transactions"
+
+    def get_queryset(self):
+        qs = Transaction.objects.select_related("account__user")
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return qs.all()
+        return qs.filter(account__user=self.request.user)
 
 
-def transaction_create(request, account_pk: int):
-    """GET + POST /transactions/create/<account_pk>/ — create deposit or withdrawal."""
-    account = get_object_or_404(Account.objects.select_related("user"), pk=account_pk)
+class TransactionDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Transaction
+    template_name = "transactions/transaction_detail.html"
+    context_object_name = "tx"
 
-    if request.method == "POST":
-        form = TransactionForm(request.POST)
-        if form.is_valid():
-            tx_type = form.cleaned_data["transaction_type"]
-            amount = form.cleaned_data["amount"]
-            description = form.cleaned_data.get("description", "")
-            try:
-                if tx_type == Transaction.TransactionType.DEPOSIT:
-                    tx = services.deposit(account, amount, description)
-                else:
-                    tx = services.withdraw(account, amount, description)
-                messages.success(
-                    request,
-                    f"{tx.get_transaction_type_display()} de ${amount:,.2f} registrada.",
-                )
-                return redirect("accounts:account_detail", pk=account.pk)
-            except (InsufficientFundsError, InvalidAmountError) as exc:
-                messages.error(request, str(exc))
-            except Exception as exc:
-                messages.error(request, f"Error inesperado: {exc}")
-    else:
-        form = TransactionForm(initial={"account_id": account.pk})
-
-    return render(
-        request,
-        "transactions/transaction_form.html",
-        {"form": form, "account": account},
-    )
+    def test_func(self):
+        tx = self.get_object()
+        return self.request.user.is_staff or self.request.user.is_superuser or tx.account.user == self.request.user
 
 
-def transaction_delete(request, pk: int):
-    """GET + POST /transactions/<pk>/delete/ — confirm and delete a transaction."""
-    tx = get_object_or_404(Transaction, pk=pk)
-    account_pk = tx.account_id
-    if request.method == "POST":
+class TransactionCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    template_name = "transactions/transaction_form.html"
+    form_class = TransactionForm
+
+    def test_func(self):
+        account = get_object_or_404(Account, pk=self.kwargs["account_pk"])
+        if self.request.user.is_superuser:
+            return True
+        if self.request.user.is_staff:
+            return False  # Staff cannot create
+        return account.user == self.request.user
+
+    def get_initial(self):
+        return {"account_id": self.kwargs["account_pk"]}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["account"] = get_object_or_404(Account.objects.select_related("user"), pk=self.kwargs["account_pk"])
+        return context
+
+    def form_valid(self, form):
+        account = get_object_or_404(Account.objects.select_related("user"), pk=self.kwargs["account_pk"])
+        tx_type = form.cleaned_data["transaction_type"]
+        amount = form.cleaned_data["amount"]
+        description = form.cleaned_data.get("description", "")
+        try:
+            if tx_type == Transaction.TransactionType.DEPOSIT:
+                tx = services.deposit(account, amount, description)
+            else:
+                tx = services.withdraw(account, amount, description)
+            messages.success(
+                self.request,
+                f"{tx.get_transaction_type_display()} de ${amount:,.2f} registrada.",
+            )
+            return redirect("accounts:account_detail", pk=account.pk)
+        except (InsufficientFundsError, InvalidAmountError) as exc:
+            messages.error(self.request, str(exc))
+            return self.form_invalid(form)
+        except Exception as exc:
+            messages.error(self.request, f"Error inesperado: {exc}")
+            return self.form_invalid(form)
+
+
+class TransactionDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Transaction
+    template_name = "transactions/transaction_confirm_delete.html"
+
+    def form_valid(self, form):
+        tx = self.get_object()
+        account_pk = tx.account_id
         services.delete_transaction(tx)
         messages.warning(
-            request,
+            self.request,
             "Transacción eliminada. El saldo de la cuenta NO fue revertido.",
         )
         return redirect("accounts:account_detail", pk=account_pk)
-    return render(
-        request,
-        "transactions/transaction_confirm_delete.html",
-        {"tx": tx},
-    )

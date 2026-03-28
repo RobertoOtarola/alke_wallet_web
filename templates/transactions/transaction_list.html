@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Transacciones — Alke Wallet{% endblock %}
 {% block nav_transactions %}active{% endblock %}
 
@@ -42,7 +43,7 @@
               <span class="badge bg-warning text-dark">Retiro</span>
             {% endif %}
           </td>
-          <td class="fw-semibold">${{ tx.amount|floatformat:2 }}</td>
+          <td class="fw-semibold">${{ tx.amount|floatformat:0|intcomma }}</td>
           <td class="text-muted">{{ tx.description|default:"—" }}</td>
           <td class="text-muted small">{{ tx.created_at|date:"d/m/Y H:i" }}</td>
           <td class="text-end">

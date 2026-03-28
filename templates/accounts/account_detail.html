@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}Cuenta #{{ account.pk }} — Alke Wallet{% endblock %}
 {% block nav_accounts %}active{% endblock %}
 
@@ -56,7 +57,7 @@
       <div class="col-sm-6 text-sm-end">
         <p class="text-muted small mb-1">Saldo disponible</p>
         <p class="display-6 fw-bold text-success mb-0">
-          ${{ account.balance|floatformat:2 }}
+          ${{ account.balance|floatformat:0|intcomma }}
         </p>
         <p class="text-muted small">
           Actualizado {{ account.updated_at|date:"d/m/Y H:i" }}
@@ -96,7 +97,7 @@
               <span class="badge bg-warning text-dark"><i class="bi bi-arrow-up-circle me-1"></i>Retiro</span>
             {% endif %}
           </td>
-          <td class="fw-semibold">${{ tx.amount|floatformat:2 }}</td>
+          <td class="fw-semibold">${{ tx.amount|floatformat:0|intcomma }}</td>
           <td class="text-muted">{{ tx.description|default:"—" }}</td>
           <td class="text-muted small">{{ tx.created_at|date:"d/m/Y H:i" }}</td>
           <td class="text-end">

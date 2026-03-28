@@ -1,76 +1,96 @@
-"""Views for the users app.
-
-Pattern: Template → View → Service → ORM → Database.
-Views only coordinate HTTP; all business logic lives in services.py.
-"""
+"""Views for the users app using CBVs."""
 
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, FormView, DeleteView
 
 from . import services
 from .forms import UserForm, UserUpdateForm
 from .models import User
 
+class StaffRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
 
-def user_list(request):
-    """GET /users/ — list all users."""
-    users = User.objects.all()
-    return render(request, "users/user_list.html", {"users": users})
+class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    model = User
+    template_name = "users/user_list.html"
+    context_object_name = "users"
 
+class UserDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = User
+    template_name = "users/user_detail.html"
+    context_object_name = "user"
 
-def user_detail(request, pk: int):
-    """GET /users/<pk>/ — display a single user."""
-    user = get_object_or_404(User, pk=pk)
-    return render(request, "users/user_detail.html", {"user": user})
+    def test_func(self):
+        user = self.get_object()
+        return self.request.user.is_staff or self.request.user.is_superuser or self.request.user == user
 
+class UserCreateView(FormView):
+    template_name = "users/user_form.html"
+    form_class = UserForm
 
-def user_create(request):
-    """GET + POST /users/create/ — create a new user."""
-    if request.method == "POST":
-        form = UserForm(request.POST)
-        if form.is_valid():
-            try:
-                services.create_user(
-                    name=form.cleaned_data["name"],
-                    email=form.cleaned_data["email"],
-                    raw_password=form.cleaned_data["password"],
-                )
-                messages.success(request, "Usuario creado exitosamente.")
-                return redirect("users:user_list")
-            except Exception as exc:
-                messages.error(request, f"Error al crear usuario: {exc}")
-    else:
-        form = UserForm()
-    return render(request, "users/user_form.html", {"form": form, "title": "Nuevo Usuario"})
+    def form_valid(self, form):
+        try:
+            services.create_user(
+                name=form.cleaned_data["name"],
+                email=form.cleaned_data["email"],
+                raw_password=form.cleaned_data["password"],
+            )
+            messages.success(self.request, "Usuario creado exitosamente. Ya puedes iniciar sesión.")
+            return redirect("login")
+        except Exception as exc:
+            messages.error(self.request, f"Error al crear usuario: {exc}")
+            return self.form_invalid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Nuevo Usuario"
+        return context
 
-def user_update(request, pk: int):
-    """GET + POST /users/<pk>/edit/ — update an existing user."""
-    user = get_object_or_404(User, pk=pk)
-    if request.method == "POST":
-        form = UserUpdateForm(request.POST, instance=user)
-        if form.is_valid():
-            try:
-                services.update_user(
-                    user=user,
-                    name=form.cleaned_data["name"],
-                    email=form.cleaned_data["email"],
-                    is_active=form.cleaned_data["is_active"],
-                )
-                messages.success(request, "Usuario actualizado exitosamente.")
-                return redirect("users:user_detail", pk=user.pk)
-            except Exception as exc:
-                messages.error(request, f"Error al actualizar: {exc}")
-    else:
-        form = UserUpdateForm(instance=user)
-    return render(request, "users/user_form.html", {"form": form, "title": "Editar Usuario", "user": user})
+class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    template_name = "users/user_form.html"
+    form_class = UserUpdateForm
 
+    def test_func(self):
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return self.request.user.is_staff or self.request.user.is_superuser or self.request.user == user
 
-def user_delete(request, pk: int):
-    """GET + POST /users/<pk>/delete/ — confirm and delete a user."""
-    user = get_object_or_404(User, pk=pk)
-    if request.method == "POST":
-        services.delete_user(user)
-        messages.success(request, "Usuario eliminado.")
-        return redirect("users:user_list")
-    return render(request, "users/user_confirm_delete.html", {"user": user})
+    def get_initial(self):
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return {"name": user.name, "email": user.email, "is_active": user.is_active}
+
+    def form_valid(self, form):
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        is_active = form.cleaned_data["is_active"] if self.request.user.is_staff else user.is_active
+        try:
+            services.update_user(
+                user=user,
+                name=form.cleaned_data["name"],
+                email=form.cleaned_data["email"],
+                is_active=is_active,
+            )
+            messages.success(self.request, "Usuario actualizado exitosamente.")
+            return redirect("users:user_detail", pk=user.pk)
+        except Exception as exc:
+            messages.error(self.request, f"Error al actualizar: {exc}")
+            return self.form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Editar Usuario"
+        context["user"] = user
+        return context
+
+class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = User
+    template_name = "users/user_confirm_delete.html"
+    success_url = reverse_lazy("users:user_list")
+
+    def form_valid(self, form):
+        services.delete_user(self.get_object())
+        messages.success(self.request, "Usuario eliminado.")
+        return redirect(self.success_url)

@@ -4,11 +4,14 @@ All write operations on the User model should go through this service
 to keep views thin and testable.
 """
 
+from django.db import transaction
 from .models import User
+from apps.accounts.models import Account
 
 
+@transaction.atomic
 def create_user(name: str, email: str, raw_password: str) -> User:
-    """Create and persist a new User with a hashed password."""
+    """Create and persist a new User and its associated Account."""
     user = User(
         name=name,
         email=email,
@@ -16,6 +19,7 @@ def create_user(name: str, email: str, raw_password: str) -> User:
     user.set_password(raw_password)
     user.full_clean()
     user.save()
+    Account.objects.create(user=user, balance=0)
     return user
 
 

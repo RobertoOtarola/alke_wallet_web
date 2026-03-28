@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.accounts",
     "apps.transactions",
+    
+    "django.contrib.humanize",
 ]
 
 MIDDLEWARE = [
@@ -84,3 +86,13 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 AUTH_USER_MODEL = "users.User"
+
+from django.contrib.messages import constants as messages
+
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+}
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'

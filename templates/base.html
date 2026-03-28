@@ -26,22 +26,50 @@
       </button>
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <a class="nav-link {% block nav_users %}{% endblock %}" href="{% url 'users:user_list' %}">
-              <i class="bi bi-people me-1"></i>Usuarios
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_accounts %}{% endblock %}" href="{% url 'accounts:account_list' %}">
-              <i class="bi bi-bank me-1"></i>Cuentas
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% block nav_transactions %}{% endblock %}"
-              href="{% url 'transactions:transaction_list' %}">
-              <i class="bi bi-arrow-left-right me-1"></i>Transacciones
-            </a>
-          </li>
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+            <li class="nav-item">
+              <a class="nav-link {% block nav_users %}{% endblock %}" href="{% url 'users:user_list' %}">
+                <i class="bi bi-people me-1"></i>Usuarios
+              </a>
+            </li>
+            {% endif %}
+            
+            {% if user.is_staff or user.account %}
+            <li class="nav-item">
+              <a class="nav-link {% block nav_accounts %}{% endblock %}" 
+                 href="{% if user.is_staff %}{% url 'accounts:account_list' %}{% else %}{% url 'accounts:account_detail' user.account.pk %}{% endif %}">
+                <i class="bi bi-bank me-1"></i>{% if user.is_staff %}Cuentas{% else %}Mi Cuenta{% endif %}
+              </a>
+            </li>
+            {% endif %}
+            
+            <li class="nav-item">
+              <a class="nav-link {% block nav_transactions %}{% endblock %}" href="{% url 'transactions:transaction_list' %}">
+                <i class="bi bi-arrow-left-right me-1"></i>Transacciones
+              </a>
+            </li>
+            
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle fw-bold text-white" href="#" role="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle me-1"></i>{{ user.name|default:user.email }}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <form action="{% url 'logout' %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="dropdown-item">Cerrar sesión</button>
+                  </form>
+                </li>
+              </ul>
+            </li>
+          {% else %}
+            <li class="nav-item">
+              <a class="nav-link {% block nav_login %}{% endblock %}" href="{% url 'login' %}">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Ingresar
+              </a>
+            </li>
+          {% endif %}
         </ul>
       </div>
     </div>

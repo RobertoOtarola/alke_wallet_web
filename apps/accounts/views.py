@@ -1,69 +1,84 @@
-"""Views for the accounts app."""
+"""Views for the accounts app using CBVs."""
 
 from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, FormView, UpdateView, DeleteView
 
 from . import services
 from .forms import AccountForm, AccountUpdateForm
 from .models import Account
 
+class StaffRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_staff or self.request.user.is_superuser
 
-def account_list(request):
-    """GET /accounts/ — list all accounts."""
-    accounts = Account.objects.select_related("user").all()
-    return render(request, "accounts/account_list.html", {"accounts": accounts})
+class AccountListView(LoginRequiredMixin, ListView):
+    model = Account
+    template_name = "accounts/account_list.html"
+    context_object_name = "accounts"
 
+    def get_queryset(self):
+        if self.request.user.is_staff or self.request.user.is_superuser:
+            return Account.objects.select_related("user").all()
+        return Account.objects.select_related("user").filter(user=self.request.user)
 
-def account_detail(request, pk: int):
-    """GET /accounts/<pk>/ — display a single account with its transactions."""
-    account = get_object_or_404(Account.objects.select_related("user"), pk=pk)
-    transactions = account.transactions.order_by("-created_at")
-    return render(
-        request,
-        "accounts/account_detail.html",
-        {"account": account, "transactions": transactions},
-    )
+class AccountDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
+    model = Account
+    template_name = "accounts/account_detail.html"
+    context_object_name = "account"
 
+    def test_func(self):
+        account = self.get_object()
+        return self.request.user.is_staff or self.request.user.is_superuser or account.user == self.request.user
 
-def account_create(request):
-    """GET + POST /accounts/create/ — create a new account for a user."""
-    if request.method == "POST":
-        form = AccountForm(request.POST)
-        if form.is_valid():
-            try:
-                account = services.create_account(user=form.cleaned_data["user"])
-                messages.success(request, f"Cuenta #{account.pk} creada exitosamente.")
-                return redirect("accounts:account_detail", pk=account.pk)
-            except Exception as exc:
-                messages.error(request, str(exc))
-    else:
-        form = AccountForm()
-    return render(request, "accounts/account_form.html", {"form": form, "title": "Nueva Cuenta"})
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["transactions"] = self.object.transactions.order_by("-created_at")
+        return context
 
+class AccountCreateView(LoginRequiredMixin, StaffRequiredMixin, FormView):
+    template_name = "accounts/account_form.html"
+    form_class = AccountForm
 
-def account_update(request, pk: int):
-    """GET + POST /accounts/<pk>/edit/ — toggle account active status."""
-    account = get_object_or_404(Account, pk=pk)
-    if request.method == "POST":
-        form = AccountUpdateForm(request.POST, instance=account)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Cuenta actualizada.")
+    def form_valid(self, form):
+        try:
+            account = services.create_account(user=form.cleaned_data["user"])
+            messages.success(self.request, f"Cuenta #{account.pk} creada exitosamente.")
             return redirect("accounts:account_detail", pk=account.pk)
-    else:
-        form = AccountUpdateForm(instance=account)
-    return render(
-        request,
-        "accounts/account_form.html",
-        {"form": form, "title": "Editar Cuenta", "account": account},
-    )
+        except Exception as exc:
+            messages.error(self.request, str(exc))
+            return self.form_invalid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Nueva Cuenta"
+        return context
 
-def account_delete(request, pk: int):
-    """GET + POST /accounts/<pk>/delete/ — confirm and delete an account."""
-    account = get_object_or_404(Account, pk=pk)
-    if request.method == "POST":
-        services.delete_account(account)
-        messages.success(request, "Cuenta eliminada.")
-        return redirect("accounts:account_list")
-    return render(request, "accounts/account_confirm_delete.html", {"account": account})
+class AccountUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+    model = Account
+    form_class = AccountUpdateForm
+    template_name = "accounts/account_form.html"
+
+    def form_valid(self, form):
+        messages.success(self.request, "Cuenta actualizada.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy("accounts:account_detail", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = "Editar Cuenta"
+        return context
+
+class AccountDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Account
+    template_name = "accounts/account_confirm_delete.html"
+    success_url = reverse_lazy("accounts:account_list")
+
+    def form_valid(self, form):
+        services.delete_account(self.get_object())
+        messages.success(self.request, "Cuenta eliminada.")
+        return redirect(self.success_url)

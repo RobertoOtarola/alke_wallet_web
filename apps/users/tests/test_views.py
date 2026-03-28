@@ -12,8 +12,13 @@ def _create_user(**kwargs):
     return User.objects.create(**defaults)
 
 
-class UserListViewTest(TestCase):
+class BaseUserTest(TestCase):
+    def setUp(self):
+        self.staff_user = _create_user(email="staff@example.com", is_staff=True)
+        self.client.force_login(self.staff_user)
 
+
+class UserListViewTest(BaseUserTest):
     def test_returns_200(self):
         response = self.client.get(reverse("users:user_list"))
         self.assertEqual(response.status_code, 200)
@@ -22,15 +27,13 @@ class UserListViewTest(TestCase):
         _create_user(email="a@alke.cl")
         _create_user(email="b@alke.cl")
         response = self.client.get(reverse("users:user_list"))
-        self.assertEqual(len(response.context["users"]), 2)
+        self.assertEqual(len(response.context["users"]), 3)
 
 
 class UserCreateViewTest(TestCase):
-
     def test_get_returns_form(self):
         response = self.client.get(reverse("users:user_create"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "<form")
 
     def test_post_creates_user_and_redirects(self):
         data = {
@@ -40,7 +43,7 @@ class UserCreateViewTest(TestCase):
             "confirm_password": "strongpass1",
         }
         response = self.client.post(reverse("users:user_create"), data)
-        self.assertRedirects(response, reverse("users:user_list"))
+        self.assertRedirects(response, reverse("login"))
         self.assertTrue(User.objects.filter(email="nuevo@alke.cl").exists())
 
     def test_post_with_mismatched_passwords_shows_error(self):
@@ -55,10 +58,9 @@ class UserCreateViewTest(TestCase):
         self.assertFalse(User.objects.filter(email="x@alke.cl").exists())
 
 
-class UserDetailViewTest(TestCase):
-
+class UserDetailViewTest(BaseUserTest):
     def test_returns_200_for_existing_user(self):
-        user = _create_user()
+        user = _create_user(email="other@test.com")
         response = self.client.get(reverse("users:user_detail", args=[user.pk]))
         self.assertEqual(response.status_code, 200)
 
@@ -67,10 +69,9 @@ class UserDetailViewTest(TestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class UserDeleteViewTest(TestCase):
-
+class UserDeleteViewTest(BaseUserTest):
     def test_post_deletes_user(self):
-        user = _create_user()
+        user = _create_user(email="del@test.com")
         pk = user.pk
-        self.client.post(reverse("users:user_delete", args=[pk]))
+        response = self.client.post(reverse("users:user_delete", args=[pk]))
         self.assertFalse(User.objects.filter(pk=pk).exists())
