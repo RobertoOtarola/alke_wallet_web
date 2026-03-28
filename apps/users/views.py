@@ -58,9 +58,10 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         user = get_object_or_404(User, pk=self.kwargs["pk"])
         return self.request.user.is_staff or self.request.user.is_superuser or self.request.user == user
 
-    def get_initial(self):
-        user = get_object_or_404(User, pk=self.kwargs["pk"])
-        return {"name": user.name, "email": user.email, "is_active": user.is_active}
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["instance"] = get_object_or_404(User, pk=self.kwargs["pk"])
+        return kwargs
 
     def form_valid(self, form):
         user = get_object_or_404(User, pk=self.kwargs["pk"])
