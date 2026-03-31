@@ -41,6 +41,12 @@ class Account(models.Model):
         verbose_name = "Cuenta"
         verbose_name_plural = "Cuentas"
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(balance__gte=0),
+                name="balance_non_negative",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"Cuenta #{self.pk} — {self.user.name} (${self.balance:,.2f})"

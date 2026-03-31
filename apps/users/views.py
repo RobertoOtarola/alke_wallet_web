@@ -2,9 +2,12 @@
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, FormView, DeleteView
+
+from core.exceptions import AlkeWalletError
 
 from . import services
 from .forms import UserForm, UserUpdateForm
@@ -41,8 +44,8 @@ class UserCreateView(FormView):
             )
             messages.success(self.request, "Usuario creado exitosamente. Ya puedes iniciar sesión.")
             return redirect("login")
-        except Exception as exc:
-            messages.error(self.request, f"Error al crear usuario: {exc}")
+        except (ValidationError, AlkeWalletError) as exc:
+            messages.error(self.request, str(exc))
             return self.form_invalid(form)
 
     def get_context_data(self, **kwargs):
@@ -75,8 +78,8 @@ class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
             messages.success(self.request, "Usuario actualizado exitosamente.")
             return redirect("users:user_detail", pk=user.pk)
-        except Exception as exc:
-            messages.error(self.request, f"Error al actualizar: {exc}")
+        except (ValidationError, AlkeWalletError) as exc:
+            messages.error(self.request, str(exc))
             return self.form_invalid(form)
 
     def get_context_data(self, **kwargs):

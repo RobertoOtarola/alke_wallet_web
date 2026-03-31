@@ -24,22 +24,25 @@ def deposit(account: Account, amount: Decimal, description: str = "") -> Transac
 
     Steps:
       1. Validate amount > 0
-      2. Create Transaction record
-      3. Update Account balance
+      2. Lock the account row (``select_for_update``)
+      3. Create Transaction record
+      4. Update Account balance
 
     All steps are wrapped in a single atomic DB transaction.
     """
     _validate_amount(amount)
 
     with db_transaction.atomic():
+        account_locked = Account.objects.select_for_update().get(pk=account.pk)
+
         tx = Transaction.objects.create(
-            account=account,
+            account=account_locked,
             amount=amount,
             transaction_type=Transaction.TransactionType.DEPOSIT,
             description=description,
         )
-        Account.objects.filter(pk=account.pk).update(
-            balance=account.balance + amount
+        Account.objects.filter(pk=account_locked.pk).update(
+            balance=account_locked.balance + amount
         )
         account.refresh_from_db(fields=["balance"])
 
@@ -51,17 +54,16 @@ def withdraw(account: Account, amount: Decimal, description: str = "") -> Transa
 
     Steps:
       1. Validate amount > 0
-      2. Validate sufficient balance
-      3. Create Transaction record
-      4. Update Account balance
+      2. Lock the account row (``select_for_update``)
+      3. Validate sufficient balance
+      4. Create Transaction record
+      5. Update Account balance
 
     All steps are wrapped in a single atomic DB transaction.
     """
     _validate_amount(amount)
 
-    # Re-fetch the balance inside the atomic block to avoid race conditions.
     with db_transaction.atomic():
-        # Lock the row for the duration of the transaction.
         account_locked = Account.objects.select_for_update().get(pk=account.pk)
 
         if account_locked.balance < amount:
@@ -85,9 +87,18 @@ def withdraw(account: Account, amount: Decimal, description: str = "") -> Transa
 
 
 def delete_transaction(tx: Transaction) -> None:
-    """Hard-delete a transaction record.
+    """Delete a transaction record.
+
+    Only available when ``DEBUG=True`` (development environment).
+    In production, transactions are immutable by design — this prevents
+    audit-trail corruption.
 
     NOTE: This does NOT reverse the corresponding balance change.
-    Use only for data-cleanup purposes in development.
     """
+    from django.conf import settings
+
+    if not settings.DEBUG:
+        raise PermissionError(
+            "Las transacciones no se pueden eliminar en producción."
+        )
     tx.delete()

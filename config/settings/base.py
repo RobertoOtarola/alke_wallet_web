@@ -3,11 +3,12 @@ Base settings for Alke Wallet Web.
 Shared across all environments.
 """
 
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = "django-insecure-change-this-in-production"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, FormView, UpdateView, DeleteView
 
+from core.exceptions import AlkeWalletError
+
 from . import services
 from .forms import AccountForm, AccountUpdateForm
 from .models import Account
@@ -47,7 +49,7 @@ class AccountCreateView(LoginRequiredMixin, StaffRequiredMixin, FormView):
             account = services.create_account(user=form.cleaned_data["user"])
             messages.success(self.request, f"Cuenta #{account.pk} creada exitosamente.")
             return redirect("accounts:account_detail", pk=account.pk)
-        except Exception as exc:
+        except (ValueError, AlkeWalletError) as exc:
             messages.error(self.request, str(exc))
             return self.form_invalid(form)
 
