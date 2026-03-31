@@ -129,17 +129,23 @@ Template → View → Service → ORM → Base de Datos (SQLite)
 
 ## 3. Capturas de Pantalla
 
-### 3.1 Usuarios
+### 3.1 Login
 
-![Usuarios](docs/screenshots/users.png)
+![Login](screenshots/3_1.png)
 
-### 3.2 Cuentas
+### 3.2 Usuarios
 
-![Cuentas](docs/screenshots/accounts.png)
+![Usuarios Admin](screenshots/3_2.png)
 
-### 3.3 Transacciones
+### 3.3 Cuentas
 
-![Transacciones](docs/screenshots/transactions.png)
+![Cuenta Cliente](screenshots/3_3_1.png)
+![Cuentas Admin](screenshots/3_3_2.png)
+
+### 3.4 Transacciones
+
+![Transacciones Cliente](screenshots/3_4_1.png)
+![Transacciones Admin](screenshots/3_4_2.png)
 
 ---
 
