@@ -1,11 +1,13 @@
 # 📄 Documento Explicativo — Modelo de Datos y Operaciones CRUD
-## Proyecto: Alke Wallet Web — Módulo 7
+## Proyecto: Alke Wallet Web — ABP #7
 
 ---
 
-## 1. Modelos Creados
+## 1. Modelo de Datos
 
-### 1.1 `User` (`apps/users/models.py`)
+### 1.1 Modelos Creados y Campos
+
+#### 1.1.1 `User` (`apps/users/models.py`)
 
 Representa a un usuario registrado en la plataforma.
 
@@ -25,7 +27,7 @@ class User(models.Model):
 
 ---
 
-### 1.2 `Account` (`apps/accounts/models.py`)
+#### 1.1.2 `Account` (`apps/accounts/models.py`)
 
 Representa la cuenta financiera asociada a un usuario.
 
@@ -45,7 +47,7 @@ class Account(models.Model):
 
 ---
 
-### 1.3 `Transaction` (`apps/transactions/models.py`)
+#### 1.1.3 `Transaction` (`apps/transactions/models.py`)
 
 Registra cada movimiento financiero (depósito o retiro) sobre una cuenta.
 
@@ -70,7 +72,7 @@ class Transaction(models.Model):
 
 ---
 
-## 2. Relaciones entre Modelos
+### 1.2 Relaciones entre Modelos
 
 ```
 User ──(OneToOne)──► Account ──(ForeignKey)──► Transaction
@@ -84,7 +86,7 @@ User ──(OneToOne)──► Account ──(ForeignKey)──► Transaction
 
 ---
 
-## 3. Operaciones CRUD Implementadas
+## 2. Operaciones CRUD Implementadas
 
 Todas las operaciones se realizan desde el navegador siguiendo el flujo:
 
@@ -92,7 +94,7 @@ Todas las operaciones se realizan desde el navegador siguiendo el flujo:
 Template → View → Service → ORM → Base de Datos (SQLite)
 ```
 
-### 3.1 Usuarios
+### 2.1 Usuarios
 
 | Operación | Vista           | Servicio            | ORM Utilizado              |
 |-----------|----------------|---------------------|----------------------------|
@@ -102,7 +104,7 @@ Template → View → Service → ORM → Base de Datos (SQLite)
 | Editar    | `user_update`  | `update_user()`     | `user.save(update_fields=…)`|
 | Eliminar  | `user_delete`  | `delete_user()`     | `user.delete()`            |
 
-### 3.2 Cuentas
+### 2.2 Cuentas
 
 | Operación | Vista             | Servicio             | ORM Utilizado                      |
 |-----------|------------------|----------------------|------------------------------------|
@@ -112,7 +114,7 @@ Template → View → Service → ORM → Base de Datos (SQLite)
 | Editar    | `account_update` | —                    | `form.save()`                      |
 | Eliminar  | `account_delete` | `delete_account()`   | `account.delete()`                 |
 
-### 3.3 Transacciones
+### 2.3 Transacciones
 
 | Operación | Vista                   | Servicio             | ORM Utilizado                      |
 |-----------|------------------------|----------------------|------------------------------------|
@@ -122,6 +124,22 @@ Template → View → Service → ORM → Base de Datos (SQLite)
 | Eliminar  | `transaction_delete`   | `delete_transaction()`| `tx.delete()`                     |
 
 > Las transacciones no tienen edición por diseño: los movimientos financieros son inmutables.
+
+---
+
+## 3. Capturas de Pantalla
+
+### 3.1 Usuarios
+
+![Usuarios](docs/screenshots/users.png)
+
+### 3.2 Cuentas
+
+![Cuentas](docs/screenshots/accounts.png)
+
+### 3.3 Transacciones
+
+![Transacciones](docs/screenshots/transactions.png)
 
 ---
 
