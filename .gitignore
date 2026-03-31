@@ -213,3 +213,8 @@ code_review*.md
 implementation_plan*.md
 walkthrough*.md
 task*.md
+
+# macOS
+.DS_Store
+docs/.DS_Store
+docs/screenshots/.DS_Store

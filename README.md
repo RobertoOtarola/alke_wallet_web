@@ -189,3 +189,9 @@ python manage.py test apps --verbosity=2
 - [ ] Incorporar App **API REST** de endpoints (`Django REST Framework`)
 - [ ] Documentación Swagger / OpenAPI para infraestructura
 - [ ] Cobertura de tests ≥ 90 %
+
+---
+
+## 11. Licencia
+
+GPL-3.0
